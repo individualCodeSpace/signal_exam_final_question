@@ -12,4 +12,10 @@
 第二题的方法可以在程潜这篇论文里找到原理和方法  
 第三题给大家提供一个完整的项目demo(源码基于python2编写，直接在python3环境下运行会报错，我调试后的版本在本项目里，源项目位于https://github.com/individualCodeSpace/Kalman.git),参考借鉴以解决老师这个问题  
 第四题，第五题方法未定，需要大家根据自己的思考发挥：  
+demo清单：  
+Kalman_CV.py --恒速模型的卡尔曼滤波算法实现  
+Kalman_CA.py --恒加速模型的卡尔曼滤波算法实现  
+kalman_adaptive.py--自适应卡尔曼滤波  
+Extended_Kalman_CTRA.py--扩展卡尔曼滤波算法用于恒定转弯速率和加速度的模型  
+详情参考https://github.com/individualCodeSpace/Kalman.git  
 

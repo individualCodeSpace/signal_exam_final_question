@@ -1,65 +1,49 @@
-function Bpsk_Signal = Bpsk_Signal_generater(symbol_rate,bits_per_symbol,snr_dB,signal_percentage)
+function [Bpsk_Signal,noise] = Bpsk_Signal_generater(symbol_rate,bits_per_symbol,snr_dB,signal_percentage)
+clc;close;
 
-num_symbols = floor(256*signal_percentage); % Òª·¢ËÍµÄ·ûºÅÊıÁ¿£¬ÔÚËÄ±¶²ÉÑùËÙÂÊÇé¿öÏÂÉú³É1024¸ö²ÉÑùµãÖ»ĞèÒª256¸ö·ûºÅ¼´¿É
-% Éú³ÉËæ»ú±ÈÌØĞòÁĞ
+num_symbols = floor(256*signal_percentage); % è¦å‘é€çš„ç¬¦å·æ•°é‡ï¼Œåœ¨å››å€é‡‡æ ·é€Ÿç‡æƒ…å†µä¸‹ç”Ÿæˆ1024ä¸ªé‡‡æ ·ç‚¹åªéœ€è¦256ä¸ªç¬¦å·å³å¯
+% ç”Ÿæˆéšæœºæ¯”ç‰¹åºåˆ—
 data = randi([0 1], 1, num_symbols * bits_per_symbol);
 
-% BPSKµ÷ÖÆ
+% BPSKè°ƒåˆ¶
 symbols = 2 * data - 1;
 
-% Éú³ÉÊ±ÖÓĞÅºÅ£¬»ù´øĞÅºÅ·ûºÅµÄÊ±¼ä²½³¤¿Ï¶¨ÊÇ²¨ÌØÂÊµÄµ¹Êı¡£
+% ç”Ÿæˆæ—¶é’Ÿä¿¡å·ï¼ŒåŸºå¸¦ä¿¡å·ç¬¦å·çš„æ—¶é—´æ­¥é•¿è‚¯å®šæ˜¯æ³¢ç‰¹ç‡çš„å€’æ•°ã€‚
 t_signal = 0:1/symbol_rate:(num_symbols*bits_per_symbol/symbol_rate - 1/symbol_rate);
 
-% Éú³Éµ÷ÖÆĞÅºÅ£¬
+% ç”Ÿæˆè°ƒåˆ¶ä¿¡å·ï¼Œ
 bpsk_signal = symbols .* cos(2 * pi * symbol_rate * t_signal);
 
-% ¼ÓÉÏÎŞĞÅºÅÆ¬¶Î£¬Îª0ĞòÁĞ
+% åŠ ä¸Šæ— ä¿¡å·ç‰‡æ®µï¼Œä¸º0åºåˆ—
 signal_front = floor(rand * (256 - num_symbols));
 signal_back = 256 - num_symbols - signal_front;
 bpsk_signal_combine = [zeros(1,signal_front),bpsk_signal,zeros(1,signal_back)];
 
-% ÉÏ²ÉÑùÄÚ²å£¬¹ıÉıÓàÏÒÂË²¨£¬²ÉÑùÒò×ÓÎª4£¬ÌáÉıĞÅºÅ²ÉÑùÂÊ£¬ÒÔÊµÏÖ³¤¶È1024µÄĞÅºÅ
+% ä¸Šé‡‡æ ·å†…æ’ï¼Œè¿‡å‡ä½™å¼¦æ»¤æ³¢ï¼Œé‡‡æ ·å› å­ä¸º4ï¼Œæå‡ä¿¡å·é‡‡æ ·ç‡ï¼Œä»¥å®ç°é•¿åº¦1024çš„ä¿¡å·
 upsampled_signal = upsample(bpsk_signal_combine,4);
 
-%%% Æ½·½ÉıÓàÏÒÂË²¨Æ÷ %%%
-rolloff = 0.35; % ¹ö½µÏµÊı
-span = 10; % ÂË²¨Æ÷µÄ·ûºÅÖÜÆÚÊı
-sps = 4; % Ã¿¸ö·ûºÅµÄÑù±¾Êı
+%%% å¹³æ–¹å‡ä½™å¼¦æ»¤æ³¢å™¨ %%%
+rolloff = 0.35; % æ»šé™ç³»æ•°
+span = 10; % æ»¤æ³¢å™¨çš„ç¬¦å·å‘¨æœŸæ•°
+sps = 4; % æ¯ä¸ªç¬¦å·çš„æ ·æœ¬æ•°
 rcosine_filter = rcosdesign(rolloff, span, sps);
 
-% ¶ÔÉÏ²ÉÑùºóµÄĞÅºÅ½øĞĞÂË²¨£¬È¥³ı²åÈëÁãÖµÒıÈëµÄ¸ßÆµ·ÖÁ¿
+% å¯¹ä¸Šé‡‡æ ·åçš„ä¿¡å·è¿›è¡Œæ»¤æ³¢ï¼Œå»é™¤æ’å…¥é›¶å€¼å¼•å…¥çš„é«˜é¢‘åˆ†é‡
 filtered_signal = filter(rcosine_filter, 1, upsampled_signal);
 
+signal_power = mean(filtered_signal.^2);
+% æ·»åŠ é«˜æ–¯ç™½å™ªå£°
+% noise_power = 10^(-snr_dB/10);
+noise_power = signal_power / (10^(snr_dB/10));
+noise = sqrt(noise_power) * (randn(1, length(filtered_signal)) + 1i * randn(1, length(filtered_signal)));
+Bpsk_Signal = filtered_signal + noise;
 
-% Ìí¼Ó¸ßË¹ÔëÉù
-noise_power = 10^(-snr_dB/10);
-noise = sqrt(noise_power/2) * (randn(1, length(filtered_signal)) + 1i * randn(1, length(filtered_signal)));
-received_signal = filtered_signal + noise;
-Bpsk_Signal = received_signal;
-%{
-t = 0:1/symbol_rate:(length(filtered_signal)/symbol_rate - 1/symbol_rate);
+t = 0:1/symbol_rate:(length(Bpsk_Signal)/symbol_rate - 1/symbol_rate);
 
+% figure;
+% subplot(2,1,1);
+% plot(t_signal,bpsk_signal);
+% subplot(2,1,2);
+% plot(t,filtered_signal);
 
-% ÏÔÊ¾·¢ËÍĞÅºÅºÍ½ÓÊÕĞÅºÅ
-figure;
-
-subplot(4,1,1);
-plot(t_signal, bpsk_signal);
-title('BPSK·¢ËÍĞÅºÅ');
-
-subplot(4,1,2);
-plot(t, filtered_signal);
-title('BPSK·¢ËÍĞÅºÅ');
-
-subplot(4,1,3);
-plot(t, received_signal);
-title('BPSK½ÓÊÕĞÅºÅ');
-
-subplot(4,1,4);
-plot(t, real(received_signal), 'r');
-hold on;
-plot(t, imag(received_signal), 'b');
-title('½ÓÊÕĞÅºÅ£¨ºìÉ«£ºÊµ²¿£¬À¶É«£ºĞé²¿£©');
-legend('Êµ²¿', 'Ğé²¿');
-%}
 end
